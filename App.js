@@ -1,9 +1,32 @@
 import React from 'react';
-import { StyleSheet, View, Dimensions } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import 'dotenv/config';
+import { StyleSheet, View, Dimensions, TextInput, Button } from 'react-native';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { SafeAreaView } from "react-native-safe-area-context";
+import axios from "axios";
 
 export default function App() {
+  const mapRef = useRef(null);
+  const [procura, setProcura] = useState("");
+  
+  async function Search() {
+    if (!search.trim()) return;
+    
+    try {
+      const response = await axios.get(
+        "https://maps.googleapis.com/maps/api/geocode/json",
+        {
+          params: {
+            address: search,
+            key: process.env.GOOGLE_MAPS_API_KEY,
+          },
+        }
+      );
+
+      const
+    }
+
+  }
   return (
     <View style={styles.container}>
       <SafeAreaView style={{ flex: 1 }}>
