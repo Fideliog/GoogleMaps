@@ -1,84 +1,90 @@
 import React, { useRef, useState } from 'react';
-import { GOOGLE_MAPS_API_KEY } from "@env";
+import { GOOGLE_MAPS_API_KEY } from "@env"; // importa a chave do .env
 import { StyleSheet, View, Dimensions, TextInput, Button } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function App() {
-  const mapRef = useRef(null);
 
-  // CORRETO: estado do input
-  const [search, setSearch] = useState("");
+  const mapRef = useRef(null); // referência do mapa para animar a câmera
 
-  // CORRETO: estado da região do mapa
+  const [search, setSearch] = useState(""); // guarda o texto digitado
   const [region, setRegion] = useState({
+    // região inicial do mapa (São Paulo)
     latitude: -23.55052,
     longitude: -46.633308,
     latitudeDelta: 0.0922,
     longitudeDelta: 0.0421,
   });
 
-async function buscarLocal() {
-  try {
-    if (!search.trim()) {
-      alert("Digite um local para buscar");
-      return;
+  // Função que chama a API do Google para buscar um local digitado
+  async function buscarLocal() {
+    try {
+      if (!search.trim()) {
+        alert("Digite um local para buscar");
+        return;
+      }
+
+      // URL da API Geocoding para converter nome/CEP/endereço em coordenadas
+      const url =
+        `https://maps.googleapis.com/maps/api/geocode/json?address=` +
+        encodeURIComponent(search) +
+        `&key=${GOOGLE_MAPS_API_KEY}`;
+
+      const response = await fetch(url); // faz a requisição
+      const data = await response.json();
+
+      console.log("Resposta da API:", data);
+
+      // se não encontrar nenhum local
+      if (!data.results || data.results.length === 0) {
+        alert("Nenhum resultado encontrado.");
+        return;
+      }
+
+      // pega latitude e longitude do primeiro resultado
+      const { lat, lng } = data.results[0].geometry.location;
+
+      // define a nova região para centralizar o mapa
+      const newRegion = {
+        latitude: lat,
+        longitude: lng,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      };
+
+      setRegion(newRegion); // atualiza a região
+      mapRef.current?.animateToRegion(newRegion, 800); // move a câmera suavemente
+
+    } catch (error) {
+      console.log("Erro ao buscar:", error);
+      alert("Erro ao buscar localização.");
     }
-
-    const url =
-      `https://maps.googleapis.com/maps/api/geocode/json?address=` +
-      encodeURIComponent(search) +
-      `&key=${GOOGLE_MAPS_API_KEY}`;
-
-    const response = await fetch(url);
-    const data = await response.json();
-
-    console.log("Resposta da API:", data);
-
-    if (!data.results || data.results.length === 0) {
-      alert("Nenhum resultado encontrado.");
-      return;
-    }
-
-    const { lat, lng } = data.results[0].geometry.location;
-
-    const newRegion = {
-      latitude: lat,
-      longitude: lng,
-      latitudeDelta: 0.01,
-      longitudeDelta: 0.01,
-    };
-
-    setRegion(newRegion);
-    mapRef.current?.animateToRegion(newRegion, 800);
-
-  } catch (error) {
-    console.log("Erro ao buscar:", error);
-    alert("Erro ao buscar localização.");
   }
-}
 
   return (
     <View style={styles.container}>
       <SafeAreaView style={{ flex: 1 }}>
 
-        {/* Campo de pesquisa */}
+        {/* Caixa de busca por cima do mapa */}
         <View style={styles.searchBox}>
           <TextInput
             placeholder="Buscar local..."
             style={styles.input}
             value={search}
-            onChangeText={setSearch}
+            onChangeText={setSearch} // atualiza o texto digitado
           />
-          <Button title="OK" onPress={buscarLocal} />
+          <Button title="OK" onPress={buscarLocal} /> {/* botão para buscar */}
         </View>
 
+        {/* Mapa */}
         <MapView
-          ref={mapRef}
+          ref={mapRef} // referência para animar o mapa
           provider={PROVIDER_GOOGLE}
           style={styles.map}
-          region={region}
+          region={region} // região atual exibida
         >
+          {/* Marca o ponto buscado */}
           <Marker
             coordinate={{
               latitude: region.latitude,
@@ -100,10 +106,10 @@ const styles = StyleSheet.create({
   },
   searchBox: {
     position: "absolute",
-    top: "5%",
+    top: "5%", // evita overlay com a status bar
     width: "100%",
     paddingHorizontal: 10,
-    zIndex: 999,
+    zIndex: 999, // fica por cima do mapa
     flexDirection: "row",
     gap: 8
   },
@@ -113,6 +119,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 10,
     height: 40,
-    elevation: 3,
+    elevation: 3, // leve sombra
   },
 });
